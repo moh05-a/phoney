@@ -233,40 +233,76 @@ export function ring(label) {
   const arc = circle('ring-arc');
   const length = 2 * Math.PI * 42;
   arc.style.strokeDasharray = length;
-  const value = h('b'), detail = h('div', { class: 'sub ellipsis' });
-  const el = h('div', { class: 'gauge' }, h('div', { class: 'gauge-dial' }, svg, h('div', { class: 'gauge-num' }, value, h('small', null, '%'))), h('div', { class: 'gauge-label ellipsis' }, label), detail);
-  return { el, set(percent, text) {
+  const value = h('b'), unit = h('small'), detail = h('div', { class: 'sub ellipsis' });
+  const num = h('div', { class: 'gauge-num' }, value, unit);
+  const el = h('div', { class: 'gauge' }, h('div', { class: 'gauge-dial' }, svg, num), h('div', { class: 'gauge-label ellipsis' }, label), detail);
+  /** `shown` replaces the centre number (with `unitText`); `neutral` keeps the arc from turning amber or red. */
+  return { el, set(percent, text, { neutral = false, shown: centre, unitText = '%' } = {}) {
     const shown = Math.max(0, Math.min(100, percent));
     arc.style.strokeDashoffset = length * (1 - shown / 100);
-    arc.style.stroke = `var(${shown >= 90 ? '--danger' : shown >= 75 ? '--warn' : '--claude'})`;
-    value.textContent = Math.round(percent);
+    arc.style.stroke = `var(${neutral ? '--claude' : shown >= 90 ? '--danger' : shown >= 75 ? '--warn' : '--claude'})`;
+    value.textContent = centre ?? Math.round(percent);
+    unit.textContent = unitText;
+    num.classList.toggle('text', centre != null);
     detail.textContent = text || '';
   } };
 }
 
-/** Two rings for Claude plan usage; shared by the widget and the AI tab. */
-export function usageRings() {
+const USAGE_PAGE = 'https://claude.ai/settings/usage';
+/** Short token counts: 950, 12k, 3.4M, 120M, 1.2B. */
+export const fmtTokens = (n) => (n >= 1e9 ? `${(n / 1e9).toFixed(1)}B` : n >= 1e8 ? `${Math.round(n / 1e6)}M` : n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(n));
+const share = (w) => (w.peak_tokens ? (100 * w.tokens) / w.peak_tokens : 0);
+
+/** An exact window from the status line counts until it resets (or for five hours if no reset time came). */
+function exactWindow(w, updatedAt) {
+  if (!w) return null;
+  const until = w.resets_at ? Date.parse(w.resets_at) : Date.parse(updatedAt || 0) + 5 * 3600e3;
+  return until > Date.now() ? w : null;
+}
+
+/**
+ * Two rings for Claude usage; shared by the widget and the AI tab.
+ * Exact plan percentages come from Claude Code's status line, which only runs in the terminal.
+ * Without them (VS Code and other IDEs), each ring falls back to tokens counted from the PC's
+ * session files: the centre shows tokens and the arc your share of your own busiest window.
+ * `compact` (the dashboard widget) returns the explanation separately, for the card header.
+ */
+export function usageRings({ compact = false } = {}) {
   const five = ring('5-hour session'), week = ring('Weekly');
   const rings = h('div', { class: 'gauges' }, five.el, week.el);
-  const box = h('div', { style: 'flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center' });
-  let last = null;
+  const note = h('div', { class: 'usage-note' });
+  const box = h('div', { class: 'usage' });
+  const estimate = { neutral: true, unitText: '' };
+  const hasLocal = live.supports('ai.local_usage');
+  let exact = null, local = null;
   const paint = () => {
-    if (!last) return;
-    if (!last.five_hour && !last.seven_day) return clear(box, emptyState('spark', 'No usage data yet.', 'It appears after the first reply in a Claude Code terminal session on a subscription plan.'));
-    if (!rings.isConnected) clear(box, rings);
-    five.el.hidden = !last.five_hour; week.el.hidden = !last.seven_day;
-    if (last.five_hour) five.set(last.five_hour.percent, resetsIn(last.five_hour.resets_at));
-    if (last.seven_day) week.set(last.seven_day.percent, resetsIn(last.seven_day.resets_at));
+    if (!exact && !local) return;
+    const e5 = exactWindow(exact?.five_hour, exact?.updated_at), e7 = exactWindow(exact?.seven_day, exact?.updated_at);
+    if (!e5 && !e7 && !local) return clear(box, emptyState('spark', 'No usage data yet.', hasLocal ? 'It appears after your first Claude Code reply on this PC.' : 'It appears after the first reply in a Claude Code terminal session on a subscription plan.'));
+    if (!rings.isConnected) clear(box, rings, compact ? null : note);
+    let estimated = false;
+    if (e5) five.set(e5.percent, resetsIn(e5.resets_at));
+    else if (local?.five_hour) { estimated = true; five.set(share(local.five_hour), `tokens · ${resetsIn(local.five_hour.resets_at)}`, { ...estimate, shown: fmtTokens(local.five_hour.tokens) }); }
+    else if (local) { estimated = true; five.set(0, 'no activity yet', { ...estimate, shown: '0' }); }
+    if (e7) week.set(e7.percent, resetsIn(e7.resets_at));
+    else if (local) { estimated = true; week.set(share(local.seven_day), 'tokens · last 7 days', { ...estimate, shown: fmtTokens(local.seven_day.tokens) }); }
+    five.el.hidden = !e5 && !local; week.el.hidden = !e7 && !local;
+    const link = h('a', { href: USAGE_PAGE, target: '_blank', rel: 'noopener' }, 'Exact limits ↗');
+    clear(note, !estimated ? null : compact ? [h('span', null, 'estimate'), link]
+      : [h('span', null, 'Counted on this PC; rings compare with your busiest window.'), link]);
   };
-  const timer = setInterval(paint, 60000); // keeps "resets in" current
-  return { el: box, update(p) { last = p; paint(); }, destroy: () => clearInterval(timer) };
+  const stops = [];
+  if (live.supports('ai.usage')) stops.push(live.subscribe('ai.usage', (p) => { exact = p; paint(); }));
+  if (hasLocal) stops.push(live.subscribe('ai.local_usage', (p) => { local = p; paint(); }));
+  const timer = setInterval(paint, 60000); // keeps "resets in" current and drops exact windows that have reset
+  return { el: box, note, destroy() { clearInterval(timer); stops.forEach((stop) => stop()); } };
 }
 
 define('usage', {
   name: 'Claude usage', icon: 'spark', topics: ['ai.usage'], sizes: [[4, 2], [2, 2]],
   make() {
-    const rings = usageRings();
-    return { body: rings.el, destroy: rings.destroy, on: { 'ai.usage': rings.update } };
+    const rings = usageRings({ compact: true });
+    return { body: rings.el, aside: rings.note, destroy: rings.destroy };
   },
 });
 

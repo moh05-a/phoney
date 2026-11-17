@@ -82,7 +82,7 @@ export function aiView(shell) {
   if (live.supports('ai.usage')) {
     const rings = usageRings();
     clear(usage, h('div', { class: 'card', style: 'padding:16px 12px;min-height:150px;display:flex' }, rings.el));
-    stops.push(live.subscribe('ai.usage', rings.update), rings.destroy);
+    stops.push(rings.destroy);
   } else usage.parentElement?.remove();
 
   if (live.hasFeature('claude_permissions')) {

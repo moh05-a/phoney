@@ -19,6 +19,7 @@ claude_code = true    # accept Claude Code hook events (see docs/INTEGRATIONS.md
 codex = true          # accept Codex hook events
 github = true         # your pull requests, review requests and activity, through the `gh` tool
 claude_permissions = true   # let a paired phone answer Claude Code permission prompts
+claude_local_usage = true   # Claude usage counted from session files, for VS Code (the status line is terminal-only)
 permission_wait_s = 30      # how long a prompt waits for the phone before the terminal asks instead
 
 # Optional: which programs count as "running dev tools" and which as "dev servers" (names without .exe).

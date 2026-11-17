@@ -44,7 +44,7 @@ app/
 ├── networking/ws.py   the live WebSocket
 ├── monitoring/        collectors.py (one class per topic), hub.py (subscriptions and fan-out)
 ├── commands/          registry.py (allowlist, executors, confirmation tokens)
-├── integrations/      dev.py (git, ports), ai.py (session store), github.py (overview through the `gh` tool), permissions.py (prompt broker), hooks.py + hook_forward.py + statusline_forward.py (installer, forwarders)
+├── integrations/      dev.py (git, ports), ai.py (session store), claude_local.py (usage from session files), github.py (overview through the `gh` tool), permissions.py (prompt broker), hooks.py + hook_forward.py + statusline_forward.py (installer, forwarders)
 ├── platform/          the only OS-specific code: ops.py (keys, lock, power, launching), winproc.py (fast process list), winmedia.py (volume level, now playing)
 ├── security/          auth.py (pairing, tokens, address checks), ratelimit.py
 ├── database/models.py SQLite schema
@@ -153,6 +153,7 @@ Changes made on one device are announced on the `sync` topic so other open panel
 | D11 | GitHub through the `gh` command-line tool | Storing a personal access token | The agent never holds a GitHub credential; `gh` keeps it in the Windows credential store |
 | D12 | Permission prompts are held only while a phone is subscribed, and time out to the terminal | Always intercept | Sitting at the PC with no panel open costs nothing; the terminal always remains a way to answer |
 | D13 | Media-session queries run on their own thread | Sharing the collector's thread | The session API never completes on a thread where COM was initialized for the volume interface (found in testing: the sample hung) |
+| D14 | Claude usage from session files when the status line is absent, shown in tokens against your own peak | Reading claude.ai's private usage API with the stored login token; showing nothing in VS Code | Official local files only and no credentials touched; it cannot be an exact percentage, so it is labeled an estimate and links to the official page |
 | D10 | No plugin loader | `plugins/` directory | The collector and widget registries already give extensibility without loading arbitrary code |
 
 ## 5. Dependencies

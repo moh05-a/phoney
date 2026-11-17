@@ -13,6 +13,7 @@ from app.commands.registry import ActionRegistry, ConfirmStore
 from app.core.config import Config, ensure_user_file, load_config
 from app.database.models import AuditLog, make_session_factory
 from app.integrations.ai import AiStore
+from app.integrations.claude_local import ClaudeLocalUsageCollector
 from app.integrations.dev import DevEnvironmentCollector, ProjectsCollector
 from app.integrations.github import GithubCollector
 from app.integrations.permissions import PermissionBroker
@@ -93,8 +94,11 @@ def build_context(
         if on.git:
             collectors.append(ProjectsCollector(config.dev.projects))
         if on.ports:
-            collectors.append(GithubCollector()) if on.github else None
             collectors.append(DevEnvironmentCollector(config.dev.process_names, config.dev.server_names))
+        if on.github:
+            collectors.append(GithubCollector())
+        if on.claude_code and on.claude_local_usage:
+            collectors.append(ClaudeLocalUsageCollector())
     hub = Hub(collectors)
 
     def ai_changed(event: dict[str, Any] | None) -> None:

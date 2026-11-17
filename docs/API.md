@@ -189,7 +189,8 @@ Sampling intervals are fixed by the agent and reported in the `ack`.
 | `dev.projects` | 10 s | `projects: [{ id, name, branch, ahead, behind, changed_files, untracked_files, dirty }]` or `{ id, name, error }` |
 | `dev.ports` | 10 s | `listeners: [{ port, pid, process }]`, `apps: [{ name, count }]` |
 | `ai.sessions` | on change | `sessions: [{ id, tool, project, state, started_at, last_activity_at }]`; `state` is `idle`, `working` or `needs_input`. Current state is sent on subscribe. |
-| `ai.usage` | on change | `five_hour`, `seven_day`: each `{ percent, resets_at }` or `null`; `updated_at`. Claude Code plan usage. Current state is sent on subscribe. |
+| `ai.usage` | on change | `five_hour`, `seven_day`: each `{ percent, resets_at }` or `null`; `updated_at`. Exact Claude plan usage from the terminal status line. Current state is sent on subscribe. |
+| `ai.local_usage` | 60 s | `five_hour`: `{ tokens, messages, started_at, resets_at, peak_tokens }` or `null` when no window is open; `seven_day`: `{ tokens, messages, peak_tokens }` (rolling 7 days); `days`: the last 7 days as `[{ date, tokens }]`, oldest first, local dates; `updated_at`. Counted from Claude Code's session files; `peak_tokens` is the busiest window in the last 35 days, for comparison. Unsupported (`claude_code_not_found`) when there is no `~/.claude/projects`. |
 | `ai.permissions` | on change | `requests: [{ id, tool, project, tool_name, summary, created_at, expires_in_s }]`: Claude Code permission prompts waiting for an answer. Current state is sent on subscribe. **Subscribing is what tells the agent a phone is ready to answer**; with no subscriber, prompts go straight to the terminal. |
 | `ai.events` | events | `{ id, ts, tool, session_id, project, kind, summary }`; `kind` is `started`, `prompt`, `finished`, `needs_input` or `ended` |
 | `sync` | events | `{ what }` where `what` is `deck`, `layout`, `tasks` or `notes`: another client changed it, re-fetch |

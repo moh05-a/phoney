@@ -14,7 +14,7 @@ Turn an old iPhone into a desk panel for your Windows PC: live system stats, a m
 | Panel | A desk-panel look that fills a landscape phone: big clock, a music player with cover art and progress (Spotify or anything else Windows shows in its media controls), Claude usage rings. Pages of widgets: CPU, memory, network, disk activity, storage, battery, GPU (NVIDIA), top processes, clock, AI sessions, Claude usage, git projects, tasks, GitHub, now playing, volume slider, media keys. Add, remove, reorder, resize, rename, per-widget settings, multiple pages. |
 | Deck | Touch buttons in groups: media and volume keys, lock, launch apps, open folders and URLs, run approved commands, sleep / restart / shut down with confirmation. |
 | Dev | Your GitHub pull requests with check and review state, review requests and recent activity. Git branch and status of your local projects, recent commits, listening dev-server ports, running dev tools. |
-| AI | Claude Code and Codex sessions, with an alert when one finishes or needs your input. Claude plan usage. Allow or deny Claude Code permission prompts from the phone. |
+| AI | Claude Code and Codex sessions, with an alert when one finishes or needs your input. Claude usage: exact limits when you use Claude Code in a terminal, an estimate counted on your PC when you use VS Code. Allow or deny Claude Code permission prompts from the phone. |
 | Focus | Tasks with daily priorities, notes, pomodoro, stopwatch, countdown. |
 
 ## What you need

@@ -48,7 +48,18 @@ Your existing hooks are left untouched, the previous file is saved as `settings.
 
 ## Claude Code usage (5-hour and weekly limits)
 
-Reference: [Claude Code status line](https://code.claude.com/docs/en/statusline). Claude Code passes session data, including `rate_limits`, to a status-line command. That is the only documented place these numbers appear, and only for subscription plans, after the first reply in a session.
+The **Claude usage** widget works two ways, picked automatically for each ring:
+
+| You use Claude Code in | What the rings show | Where it comes from |
+|---|---|---|
+| A terminal (`claude`) | Exact percent of your plan's 5-hour and weekly limits, with reset times | The status line, set up below |
+| VS Code or another IDE extension | Tokens used in the current 5-hour window and the last 7 days. The arc compares them with your own busiest window, marked **estimate**, with a link to the exact numbers on claude.ai | Claude Code's session files on this PC |
+
+Exact numbers win while they are current. When a window from the status line resets, that ring switches back to the estimate until the terminal sends new numbers.
+
+### Exact numbers: the status line (terminal)
+
+Reference: [Claude Code status line](https://code.claude.com/docs/en/statusline). Claude Code passes session data, including `rate_limits`, to a status-line command. That is the only documented place these numbers appear, and only for subscription plans, after the first reply in a session. The status line runs only in the terminal; the VS Code extension does not run it.
 
 ```powershell
 python -m app hooks show claude-usage       # prints the setting, changes nothing
@@ -60,7 +71,18 @@ python -m app hooks uninstall claude-usage
 
 If you already have a status line configured, `install` refuses to replace it and prints the forwarder command so you can call it from your own script.
 
-The panel shows this in the **Claude usage** widget (Add widget in edit mode).
+### Estimate: session files (VS Code and other IDEs)
+
+Nothing to install. Claude Code saves every conversation, from the terminal and the IDE extensions alike, as JSON lines under `~/.claude/projects/` (or `CLAUDE_CONFIG_DIR\projects`). Each reply records the token counts the API returned. While a panel shows the usage widget, the agent reads new lines once a minute (`app/integrations/claude_local.py`):
+
+- It keeps only a time stamp and a token total per reply (input, output, cache writes and cache reads), for 35 days, in memory. Message text is never stored.
+- A 5-hour window opens at the hour of the first reply after the previous window closed. This is the common reading of Claude's limits, not an official formula.
+- Anthropic does not publish the limits in tokens, so the agent cannot compute a real percentage. The arc compares with your busiest 5-hour window and busiest 7 days in the kept history instead. A full ring means "as busy as you have ever been", not "limit reached".
+- The **Exact limits** link opens claude.ai's usage page.
+
+Turn it off with `claude_local_usage = false` under `[integrations]` in `config.toml`. Cost: the first read of about 150 MB of session files took 0.5 s on the development PC; later reads take a few milliseconds.
+
+The panel shows usage in the **Claude usage** widget (Add widget in edit mode) and on the AI screen.
 
 ## Answering Claude Code permission prompts from the phone
 
@@ -81,7 +103,7 @@ How a prompt travels:
 
 What to expect: while a panel is listening, the terminal prompt appears only after the phone answers or the wait runs out. Lower `permission_wait_s` in `config.toml` if that feels slow.
 
-Verified: the whole path with a simulated hook call and a real browser panel (card shown, Allow tapped, the documented JSON returned). Not yet seen with a real Claude Code prompt.
+Verified (2026-11-17) with a real prompt from the Claude Code VS Code extension: the card appeared on an iPhone, and Deny on the phone reached Claude Code as "Denied from the Phoney panel." The prompt only exists when Claude Code would ask you; in Auto mode most actions are approved without asking, so nothing reaches the phone.
 
 ## GitHub
 
@@ -103,7 +125,7 @@ This writes `~/.codex/hooks.json` with entries for `SessionStart`, `SessionEnd`,
 
 - Verified by automated tests: event intake, state transitions, that no prompt or transcript content is stored, delivery to a subscribed phone, and that install followed by uninstall restores the settings file exactly.
 - **Verified with real Claude Code (2026-11-16):** session hooks installed on this PC and events from a live session arrived (prompt, working, finished).
-- **Not yet verified:** Codex hooks with the real tool, and the usage numbers with a live terminal session (the status line does not run inside the VS Code extension). The entry format follows the official documentation; the first real run is the confirmation. If Codex rejects the file, `python -m app hooks uninstall codex` restores it.
+- **Not yet verified:** Codex hooks with the real tool, and exact usage numbers from a live terminal session. The VS Code estimate was checked against the real session files on the development PC. The entry format follows the official documentation; the first real run is the confirmation. If Codex rejects the file, `python -m app hooks uninstall codex` restores it.
 
 ## Not included
 

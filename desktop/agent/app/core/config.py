@@ -38,6 +38,7 @@ class IntegrationsConfig(_Section):
     codex: bool = True
     github: bool = True
     claude_permissions: bool = True
+    claude_local_usage: bool = True  # count Claude usage from session files when the status line is absent
     permission_wait_s: int = Field(default=30, ge=5, le=120)
 
 

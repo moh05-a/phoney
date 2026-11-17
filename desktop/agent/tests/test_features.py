@@ -520,6 +520,99 @@ def test_status_line_text() -> None:
     assert status_text({}) == "Claude Code"
 
 
+def _reply(msg_id: str, when: str, out: int = 100, text: str = "secret reply text") -> str:
+    import json
+
+    entry = {
+        "type": "assistant",
+        "timestamp": when,
+        "requestId": f"req-{msg_id}",
+        "message": {
+            "id": msg_id,
+            "content": [{"type": "text", "text": text}],
+            "usage": {"input_tokens": 10, "output_tokens": out, "cache_creation_input_tokens": 0,
+                      "cache_read_input_tokens": 1000, "server_tool_use": {"web_search_requests": 0}},
+        },
+    }  # fmt: skip
+    return json.dumps(entry) + "\n"
+
+
+def test_session_lines_give_reply_time_and_tokens() -> None:
+    from datetime import UTC, datetime
+
+    from app.integrations.claude_local import parse_line
+
+    key, when, tokens = parse_line(_reply("m1", "2026-11-17T08:30:00.000Z").encode())
+    assert key == "m1:req-m1" and when == datetime(2026, 11, 17, 8, 30, tzinfo=UTC) and tokens == 1110
+    assert parse_line(b'{"type": "user", "message": {"content": "hi"}}\n') is None
+    assert parse_line(b"not json but assistant usage\n") is None
+    flagged = _reply("m2", "2026-11-17T08:30:00Z").replace('"output_tokens": 100', '"output_tokens": true')
+    assert parse_line(flagged.encode())[2] == 1010  # a non-number is skipped, not counted
+
+
+def test_session_files_are_read_incrementally_and_counted_once(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+
+    from app.integrations.claude_local import SessionFiles
+
+    now = datetime(2026, 11, 17, 9, 0, tzinfo=UTC)
+    session = tmp_path / "C--code-app" / "abc.jsonl"
+    session.parent.mkdir()
+    # One reply is written once per content block: same id twice. The last line is still being written.
+    session.write_text(_reply("m1", "2026-11-17T08:10:00Z") * 2 + _reply("m2", "2026-11-17T08:20:00Z")[:40])
+    files = SessionFiles(tmp_path)
+    files.refresh(now)
+    assert files.replies() == [(datetime(2026, 11, 17, 8, 10, tzinfo=UTC), 1110)]
+    with session.open("a") as handle:  # the half-written line is finished, and a subagent file appears
+        handle.write(_reply("m2", "2026-11-17T08:20:00Z")[40:])
+    (session.parent / "abc" / "subagents").mkdir(parents=True)
+    (session.parent / "abc" / "subagents" / "agent-1.jsonl").write_text(
+        _reply("m3", "2026-11-17T08:25:00Z", out=0)
+    )
+    files.refresh(now)
+    assert sorted(t for _, t in files.replies()) == [1010, 1110, 1110]
+    assert "secret" not in repr(files.replies())
+    session.write_text(_reply("m9", "2026-11-17T08:40:00Z"))  # replaced by a shorter file: read again
+    files.refresh(now)
+    assert len(files.replies()) == 4
+
+
+def test_local_usage_windows_and_busiest_comparison() -> None:
+    from datetime import UTC, datetime, timedelta
+
+    from app.integrations.claude_local import summarize
+
+    at = lambda d, h, m=0: datetime(2026, 11, d, h, m, tzinfo=UTC)  # noqa: E731
+    replies = [(at(9, 8, 10), 500), (at(9, 12, 59), 500),  # one window 08:00-13:00 on the 9th: the busiest
+               (at(17, 8, 30), 100), (at(17, 9, 15), 50)]  # today, window 08:00-13:00  # fmt: skip
+    usage = summarize(replies, at(17, 10), local_tz=UTC)
+    assert usage["five_hour"] == {"tokens": 150, "messages": 2, "started_at": "2026-11-17T08:00:00.000Z",
+                                  "resets_at": "2026-11-17T13:00:00.000Z", "peak_tokens": 1000}  # fmt: skip
+    assert usage["seven_day"] == {"tokens": 150, "messages": 2, "peak_tokens": 1000}  # the 9th's week
+    assert [d["tokens"] for d in usage["days"]] == [0, 0, 0, 0, 0, 0, 150]
+    assert usage["days"][-1]["date"] == "2026-11-17"
+    assert summarize(replies, at(17, 13), local_tz=UTC)["five_hour"] is None  # the window has closed
+    late = summarize([*replies, (at(17, 13, 5), 10)], at(17, 13, 30), local_tz=UTC)["five_hour"]
+    assert late["started_at"] == "2026-11-17T13:00:00.000Z" and late["tokens"] == 10
+    empty = summarize([], at(17, 10) + timedelta(seconds=1), local_tz=UTC)
+    assert empty["five_hour"] is None and empty["seven_day"] == {"tokens": 0, "messages": 0, "peak_tokens": 0}
+
+
+def test_local_usage_collector(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+
+    from app.integrations.claude_local import ClaudeLocalUsageCollector
+
+    assert ClaudeLocalUsageCollector(tmp_path / "nowhere").unsupported_reason() == "claude_code_not_found"
+    (tmp_path / "projects" / "p").mkdir(parents=True)
+    now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    (tmp_path / "projects" / "p" / "s.jsonl").write_text(_reply("m1", now))
+    collector = ClaudeLocalUsageCollector(tmp_path)
+    assert collector.unsupported_reason() is None
+    sample = collector.sample()
+    assert sample["five_hour"]["tokens"] == 1110 and sample["updated_at"]
+
+
 def test_status_line_install_never_replaces_the_users_own() -> None:
     mine = {"model": "x", "statusLine": {"type": "command", "command": "my-script.sh"}}
     with pytest.raises(ValueError):

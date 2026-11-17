@@ -16,7 +16,7 @@ Last updated 2026-11-16.
 
 | Check | Result |
 |---|---|
-| Automated tests (`pytest`) | 115 passing: security, actions and deck, WebSocket and hub, features and integrations |
+| Automated tests (`pytest`) | 119 passing: security, actions and deck, WebSocket and hub, features and integrations |
 | Lint (`ruff check`) | Clean |
 | Agent started for real and exercised with `curl` | Health, pairing, snapshot, capabilities all correct |
 | Panel driven in headless Microsoft Edge at phone size (390×844 and 844×390) | Pairing with a code, live widgets, both dashboard pages, edit mode, deck, confirmation dialog, button editor, Dev, AI, tasks, timers, settings, light theme, landscape. No JavaScript errors. |
@@ -50,8 +50,11 @@ Two bugs found and fixed during this testing, each now covered by a test:
 | Player card (cover art, progress, volume) | Against the live Spotify session on this PC: title, artist, album, position and the real cover image |
 | GitHub overview | Against the live account through `gh`: activity, repositories and pull requests rendered in the widget and the Dev tab |
 | Claude Code session hooks | Real: events from a live session arrived at the running agent |
-| Permission prompts on the phone | Simulated hook call plus a real browser panel: card shown, Allow tapped, the documented decision JSON returned. Not yet seen with a real prompt. |
-| Claude usage rings | Sample data through the real forwarder. The status line does not run in the VS Code extension, so live numbers need a terminal session. |
+| Permission prompts on the phone | Real (2026-11-17): a prompt from the Claude Code VS Code extension appeared on an iPhone, and Deny on the phone reached Claude Code |
+| Claude usage rings, exact | Sample data through the real forwarder and the headless browser. Not yet seen with a live terminal session. |
+| Claude usage rings, estimate (VS Code) | Against the real session files on the development PC (about 150 MB): first read 0.5 s, later reads about 8 ms; headless browser for both modes and the switch between them |
+
+The panel has also run on a real iPhone over Wi-Fi (2026-11-16 and 17), paired and live.
 
 A bug found and fixed in this round: with music playing, the now-playing query hung when it shared a thread with the volume query; it now runs on its own thread with a timeout.
 
@@ -59,11 +62,10 @@ A bug found and fixed in this round: with music playing, the now-playing query h
 
 | Item | Why | How you verify it |
 |---|---|---|
-| The panel on a real iPhone in Safari and from the Home Screen | No device available to the build session | Follow the Quick start in README.md. Things to look at: safe-area spacing around the notch and home indicator, tap feel, the chime after the first touch. |
-| Reaching the agent from another device over Wi-Fi | Tests ran on loopback to avoid opening the firewall without you | Start the agent normally; Windows will ask about the firewall the first time |
+| The panel on other iPhone models and iOS versions | Only one iPhone has been tried | Follow the Quick start in README.md. Things to look at: safe-area spacing around the notch and home indicator, tap feel, the chime after the first touch. |
 | Real media keys, volume keys, lock, app launches | Tests use a fake OS layer so they cannot disturb the PC | Press the buttons on the deck |
 | Sleep, restart, shut down | Same; and they are off by default | Set `allow_power_actions = true`, restart the agent, try Sleep first |
-| Claude Code and Codex hooks with the real tools | Installing them changes your personal settings files | `python -m app hooks install claude-code`, then start a session |
+| Codex hooks with the real tool | Codex is not installed on the development PC | `python -m app hooks install codex`, then start a session |
 | NVIDIA GPU metrics | This PC has no NVIDIA tooling | `pip install nvidia-ml-py` on a machine with an NVIDIA GPU |
 | Autostart script | It adds a Startup entry to your account | `scripts\autostart.ps1`, then sign out and in |
 | 24-hour stability | Time | Leave it on the stand for a day and check `logs\agent.log` |
@@ -110,6 +112,7 @@ Phase 4 (developer and AI):
 - [x] Install shows the exact change and asks first; uninstall restores the file
 - [ ] Confirmed with real Claude Code and Codex sessions
 - [x] Claude Code usage display (status-line forwarder; tested with the real forwarder script and sample data)
+- [x] Claude usage for VS Code users, counted from session files (falls back automatically when the status line is absent)
 
 Phase 5 (productivity):
 
