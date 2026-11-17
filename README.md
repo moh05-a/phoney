@@ -2,6 +2,8 @@
 
 Turn an old iPhone into a desk panel for your Windows PC: live system stats, a music player, your GitHub pull requests, Claude Code sessions, and a deck of buttons that control the PC. It works over your home Wi-Fi with no cloud service, no account and no App Store.
 
+![Phoney on an iPhone in landscape: a large clock, a music player, Claude usage and AI sessions](docs/screenshots/desk.png)
+
 > **Status: early preview (0.2).** Tested on one Windows 11 PC and in a phone-sized browser. It has not yet been tried on many real phones. Bug reports are very welcome.
 
 - **Desktop agent** (`desktop/agent`, Python + FastAPI) runs on the PC: live metrics, an allowlist of actions, AI-tool events, tasks and notes.
@@ -16,6 +18,15 @@ Turn an old iPhone into a desk panel for your Windows PC: live system stats, a m
 | Dev | Your GitHub pull requests with check and review state, review requests and recent activity. Git branch and status of your local projects, recent commits, listening dev-server ports, running dev tools. |
 | AI | Claude Code and Codex sessions, with an alert when one finishes or needs your input. Claude usage: exact limits when you use Claude Code in a terminal, an estimate counted on your PC when you use VS Code. Allow or deny Claude Code permission prompts from the phone. |
 | Focus | Tasks with daily priorities, notes, pomodoro, stopwatch, countdown. |
+
+### Screenshots
+
+All taken on an iPhone in landscape.
+
+| | |
+|---|---|
+| ![Answering a Claude Code permission prompt from the phone, with Allow and Deny buttons and a countdown](docs/screenshots/permission.png) **Claude Code asks, you answer on the phone** | ![System page: CPU, memory, network, storage and top processes](docs/screenshots/system.png) **System stats** |
+| ![Work page: GitHub activity, git projects with their status, tasks and a volume slider](docs/screenshots/work.png) **GitHub, git projects and tasks** | ![Control deck: media keys, volume, Explorer, Terminal and lock](docs/screenshots/deck.png) **Control deck** |
 
 ## What you need
 
