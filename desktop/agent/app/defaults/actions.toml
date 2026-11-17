@@ -1,0 +1,58 @@
+# Allowlist of things the phone may trigger. Only this file decides what can run:
+# the phone can arrange buttons, but it can never add or change a command.
+# Restart the agent after editing.
+#
+# Built-in actions are always available and need no entry here:
+#   media.play_pause  media.next  media.prev  media.stop
+#   volume.up  volume.down  volume.mute  system.lock
+#   system.sleep  system.restart  system.shutdown   (only if allow_power_actions = true)
+#
+# Kinds you can add:
+#   launch_app   start a program and return immediately   -> program, args
+#   run_command  run a command and wait for its exit code -> program, args, cwd, timeout_s
+#   open_path    open a file or folder with its default app -> path
+#   open_url     open a web address in the default browser -> url
+#
+# Commands run without a shell, exactly as written. Use single quotes for Windows paths.
+# run_command actions ask for confirmation on the phone unless danger = false.
+
+[[action]]
+id = "open_explorer"
+name = "File Explorer"
+kind = "launch_app"
+program = "explorer.exe"
+
+[[action]]
+id = "open_terminal"
+name = "Terminal"
+kind = "launch_app"
+program = "wt.exe"
+
+# [[action]]
+# id = "open_vscode"
+# name = "VS Code"
+# kind = "launch_app"
+# program = "code"
+#
+# [[action]]
+# id = "open_my_project"
+# name = "My project"
+# kind = "launch_app"
+# program = "code"
+# args = ['C:\Users\me\code\my-app']
+#
+# [[action]]
+# id = "run_tests"
+# name = "Run tests"
+# kind = "run_command"
+# program = "python"
+# args = ["-m", "pytest", "-q"]
+# cwd = 'C:\Users\me\code\my-app'
+# timeout_s = 120
+# danger = false
+#
+# [[action]]
+# id = "open_github"
+# name = "GitHub"
+# kind = "open_url"
+# url = "https://github.com"

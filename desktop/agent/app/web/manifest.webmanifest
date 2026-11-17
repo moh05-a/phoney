@@ -1,0 +1,9 @@
+{
+  "name": "Phoney",
+  "short_name": "Phoney",
+  "display": "standalone",
+  "start_url": "./",
+  "background_color": "#0a0c0f",
+  "theme_color": "#0a0c0f",
+  "icons": [{ "src": "icon-180.png", "sizes": "180x180", "type": "image/png" }]
+}

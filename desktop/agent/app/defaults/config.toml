@@ -1,0 +1,32 @@
+# Phoney agent configuration. Restart the agent after editing.
+
+[server]
+# name = "Desk PC"        # shown on the phone; defaults to the computer name
+lan_host = "0.0.0.0"
+lan_port = 7420            # the phone connects here
+local_port = 7421          # pairing and admin page, reachable only from this PC
+
+[security]
+enforce_private_sources = true   # refuse clients that are not on a private network
+allow_power_actions = false      # set true to allow sleep / restart / shut down from the phone
+pairing_code_ttl_s = 600
+
+[integrations]
+processes = true      # top-processes widget
+git = true            # git status of the projects listed below
+ports = true          # listening dev-server ports and running dev apps
+claude_code = true    # accept Claude Code hook events (see docs/INTEGRATIONS.md)
+codex = true          # accept Codex hook events
+github = true         # your pull requests, review requests and activity, through the `gh` tool
+claude_permissions = true   # let a paired phone answer Claude Code permission prompts
+permission_wait_s = 30      # how long a prompt waits for the phone before the terminal asks instead
+
+# Optional: which programs count as "running dev tools" and which as "dev servers" (names without .exe).
+# [dev]
+# process_names = ["code", "node", "python", "docker desktop"]
+# server_names = ["node", "python", "postgres"]
+
+# Projects shown on the developer dashboard. Use single quotes for Windows paths.
+# [[dev.projects]]
+# name = "my-app"
+# path = 'C:\Users\me\code\my-app'
