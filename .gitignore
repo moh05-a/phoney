@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# Runtime data and secrets never belong in the repo
+*.db
+*.db-journal
+*.pem
+config.toml
+actions.toml
+!desktop/agent/app/defaults/*.toml
+logs/
+.DS_Store
